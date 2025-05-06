@@ -52,9 +52,9 @@ class ParticleBackground extends Component {
                 },
               },
               particles: {
-                color: { value: "#ffffff" },
+                color: { value: "#000000" },
                 links: {
-                  color: "#ffffff",
+                  color: "#000000",
                   distance: 150,
                   enable: true,
                   opacity: 0.5,
