@@ -12,8 +12,36 @@ class App extends Component {
     super();
     this.state = {
       input: '',
-      imageUrl:''
+      imageUrl:'',
+      box: {}
     }
+  }
+
+  calculateFaceLocation = (data) => {
+    const image = document.getElementById('inputImage');
+    const width = Number(image.width);
+    const height = Number(image.height);
+
+    return data.outputs[0].data.regions.map(region => {
+      const boundingBox = region.region_info.bounding_box;
+      return{
+        topRow : boundingBox.top_row*height,
+        leftCol : boundingBox.left_col*width,
+        bottomRow : height - (boundingBox.bottom_row*height),
+        rightCol : width - (boundingBox.right_col*width)
+      };
+    });
+  };
+
+  displayFaceBoxes = (boxPosition) => {
+    this.setState({boxPosition: boxPosition});
+    console.log('Box:', boxPosition);
+  }
+
+  onImageLoad = () => {
+    const boxPosition = this.calculateFaceLocation(this.clarifaiResponse);
+    console.log('Calculated Box Position:', boxPosition);
+    this.displayFaceBoxes(boxPosition);
   }
 
   OnInputChange = (event) => {
@@ -76,34 +104,40 @@ const requestOptions = {
 // https://api.clarifai.com/v2/models/{YOUR_MODEL_ID}/outputs
 // this will default to the latest version_id
 
+// fetch("https://cors-anywhere.herokuapp.com/https://api.clarifai.com/v2/models/" + MODEL_ID + "/versions/" + MODEL_VERSION_ID + "/outputs", requestOptions)
+//     .then(response => response.json())
+//     .then(result => {
+
+//         const regions = result.outputs[0].data.regions;
+
+//         regions.forEach(region => {
+//             // Accessing and rounding the bounding box values
+//             const boundingBox = region.region_info.bounding_box;
+            // const topRow = boundingBox.top_row.toFixed(3);
+            // const leftCol = boundingBox.left_col.toFixed(3);
+            // const bottomRow = boundingBox.bottom_row.toFixed(3);
+            // const rightCol = boundingBox.right_col.toFixed(3);
+
+//             region.data.concepts.forEach(concept => {
+//                 // Accessing and rounding the concept value
+//                 const name = concept.name;
+//                 const value = concept.value.toFixed(4);
+
+//                 console.log(`${name}: ${value} BBox: TopRow:${topRow}, LeftCol:${leftCol}, BottomRow:${bottomRow}, RightCol:${rightCol}`);
+                
+//             });
+//         });
+
+//     })
+//     .catch(error => console.log('error', error));
+
 fetch("https://cors-anywhere.herokuapp.com/https://api.clarifai.com/v2/models/" + MODEL_ID + "/versions/" + MODEL_VERSION_ID + "/outputs", requestOptions)
     .then(response => response.json())
     .then(result => {
-
-        const regions = result.outputs[0].data.regions;
-
-        regions.forEach(region => {
-            // Accessing and rounding the bounding box values
-            const boundingBox = region.region_info.bounding_box;
-            const topRow = boundingBox.top_row.toFixed(3);
-            const leftCol = boundingBox.left_col.toFixed(3);
-            const bottomRow = boundingBox.bottom_row.toFixed(3);
-            const rightCol = boundingBox.right_col.toFixed(3);
-
-            region.data.concepts.forEach(concept => {
-                // Accessing and rounding the concept value
-                const name = concept.name;
-                const value = concept.value.toFixed(4);
-
-                console.log(`${name}: ${value} BBox: TopRow:${topRow}, LeftCol:${leftCol}, BottomRow:${bottomRow}, RightCol:${rightCol}`);
-                
-            });
-        });
-
+      const boxPosition = this.calculateFaceLocation(result);
+      this.displayFaceBoxes(boxPosition);
+      this.clarifaiResponse = result;
     })
-    .catch(error => console.log('error', error));
-
-
   }
 
   render(){
@@ -115,7 +149,7 @@ fetch("https://cors-anywhere.herokuapp.com/https://api.clarifai.com/v2/models/" 
         <Logo />
         <Rank />
         <ImageLinkForm OnInputChange={this.OnInputChange} onButtonSubmit={this.onButtonSubmit}/>
-        <FaceRecognition imageUrl={this.state.imageUrl}/>
+        <FaceRecognition imageUrl={this.state.imageUrl} boxPosition={this.state.boxPosition} onImageLoad={this.onImageLoad}/>
       </div></>
     );
   }
