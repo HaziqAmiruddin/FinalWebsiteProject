@@ -134,11 +134,13 @@ const requestOptions = {
 fetch("https://cors-anywhere.herokuapp.com/https://api.clarifai.com/v2/models/" + MODEL_ID + "/versions/" + MODEL_VERSION_ID + "/outputs", requestOptions)
     .then(response => response.json())
     .then(result => {
+      this.clarifaiResponse = result;
       const boxPosition = this.calculateFaceLocation(result);
       this.displayFaceBoxes(boxPosition);
-      this.clarifaiResponse = result;
     })
+    .catch(error => console.log('error', error));
   }
+
 
   render(){
     return (
