@@ -1,8 +1,49 @@
 import React from 'react';
 import './SignIn.css';
 
-const SignIn = ({onRouteChange}) => {
-    return (
+class SignIn extends React.Component {
+    constructor(props){
+        super(props);
+        this.state = {
+            signInEmail: '',
+            signInPassword: '',
+        };
+    }
+
+    onEmailChange = (event) => {
+        this.setState({signInEmail: event.target.value})
+    }
+
+    onPasswordChange = (event) => {
+        this.setState({signInPassword: event.target.value})
+    }
+
+    onSubmitSignIn = () => {
+        fetch('http://localhost:3000/signin', {
+            method: 'post',
+            headers: {'Content-Type': 'Application/json'},
+            body: JSON.stringify({
+                email: this.state.signInEmail,
+                password: this.state.signInPassword
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id ) {
+                this.props.loadUser(data);
+                this.props.onRouteChange('home');
+            } else {
+                console.log('Login failed: Invalid user data');
+            }
+        })
+        .catch(err => {
+            console.error('Sign-in error', err);
+        })
+    }
+
+    render(){
+        const { onRouteChange } = this.props;
+        return (
         <article class="br3 ba dark-gray b--black-10 mv4 w-100 w-50-m w-25-l mw6 shadow-5 center">
             <main className="pa4 black-80">
                 <div className="measure">
@@ -16,6 +57,7 @@ const SignIn = ({onRouteChange}) => {
                                 type="email"
                                 name="email-address"
                                 id="email-address"
+                                onChange={this.onEmailChange}
                             />
                         </div>
 
@@ -26,6 +68,7 @@ const SignIn = ({onRouteChange}) => {
                                 type="password"
                                 name="password"
                                 id="password"
+                                onChange={this.onPasswordChange}
                             />
                         </div>
 
@@ -35,7 +78,8 @@ const SignIn = ({onRouteChange}) => {
 
                     <div>
                         <input
-                            onClick={() => onRouteChange('home')}
+                            //onClick={() => onRouteChange('home')}
+                            onClick={this.onSubmitSignIn}
                             className="b ph3 pv2 input-reset ba b--black bg-transparent grow pointer f6 dib"
                             type="submit"
                             value="Sign in"
@@ -51,6 +95,8 @@ const SignIn = ({onRouteChange}) => {
             </main>
         </article>
     );
+}
+    
 };
 
 export default SignIn;

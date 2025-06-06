@@ -9,17 +9,60 @@ import FaceRecognition from './components/FaceRecognition/FaceRecognition';
 import SignIn from './components/SignIn/SignIn';
 import Register from './components/Register/Register';
 
-class App extends Component {
-  constructor(){
-    super();
-    this.state = {
+const initialState = {
       input: '',
       imageUrl:'',
       box: {},
       route:'SignIn',
       isSignedIn: false,
+      user: {
+        id: '',
+        name: '',
+        email: '',
+        //password: '',
+        entries: 0,
+        joined: '',
+      }
+}
+
+class App extends Component {
+  constructor(){
+    super();
+    this.state = {
+      // input: '',
+      // imageUrl:'',
+      // box: {},
+      // route:'SignIn',
+      // isSignedIn: false,
+      // user: {
+      //   id: '',
+      //   name: '',
+      //   email: '',
+      //   //password: '',
+      //   entries: 0,
+      //   joined: '',
+      // }
+      initialState,
     }
   }
+
+  loadUser = (data) => {
+    this.setState({user: {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      //password: '',
+      entries: data.entries,
+      joined: data.joined,
+    }})
+  }
+
+  //test connect own server
+  // componentDidMount(){
+  //   fetch('http://localhost:3000')
+  //   .then(response => response.json())
+  //   .then(console.log)
+  // }
 
   calculateFaceLocation = (data) => {
     const image = document.getElementById('inputImage');
@@ -43,6 +86,11 @@ class App extends Component {
   }
 
   onImageLoad = () => {
+    if (!this.clarifaiResponse || !this.clarifaiResponse.outputs) {
+    console.warn('Clarifai response not available or invalid at image load.');
+    return;
+    }
+
     const boxPosition = this.calculateFaceLocation(this.clarifaiResponse);
     console.log('Calculated Box Position:', boxPosition);
     this.displayFaceBoxes(boxPosition);
@@ -138,6 +186,23 @@ const requestOptions = {
 fetch("https://cors-anywhere.herokuapp.com/https://api.clarifai.com/v2/models/" + MODEL_ID + "/versions/" + MODEL_VERSION_ID + "/outputs", requestOptions)
     .then(response => response.json())
     .then(result => {
+
+       console.log('Clarifai API result:', result);
+
+      if (result && result.outputs && result.outputs[0]) {
+        fetch('http://localhost:3000/image', {
+              method: 'put',
+              headers: {'Content-Type': 'Application/json'},
+              body: JSON.stringify({
+              id: this.state.user.id
+            })
+        })
+        .then(response => response.json())
+        .then(count => {
+          this.setState(Object.assign(this.state.user, {entries: count}))
+        })
+      }
+
       this.clarifaiResponse = result;
       const boxPosition = this.calculateFaceLocation(result);
       this.displayFaceBoxes(boxPosition);
@@ -145,14 +210,37 @@ fetch("https://cors-anywhere.herokuapp.com/https://api.clarifai.com/v2/models/" 
     .catch(error => console.log('error', error));
   }
 
+  // onRouteChange = (route) => {
+  //   if(route === 'SignOut'){
+  //     this.setState({isSignedIn: false})
+  //   }else if(route === 'home'){
+  //      this.setState({isSignedIn: true})
+  //   }
+  //   this.setState({route: route});
+  // }
   onRouteChange = (route) => {
-    if(route === 'SignOut'){
-      this.setState({isSignedIn: false})
-    }else if(route === 'home'){
-       this.setState({isSignedIn: true})
-    }
-    this.setState({route: route});
+  if (route === 'SignOut') {
+    this.setState({
+      input: '',
+      imageUrl: '',
+      box: {},
+      route: 'SignIn',
+      isSignedIn: false,
+      user: {
+        id: '',
+        name: '',
+        email: '',
+        entries: 0,
+        joined: ''
+      }
+      //initialState,
+    });
+  } else if (route === 'home') {
+    this.setState({ isSignedIn: true });
   }
+
+  this.setState({ route: route });
+}
 
 
   render(){
@@ -167,16 +255,19 @@ fetch("https://cors-anywhere.herokuapp.com/https://api.clarifai.com/v2/models/" 
         ? 
           <div>
               <Logo />
-              <Rank />
+              <Rank 
+                name={this.state.user.name} 
+                entries={this.state.user.entries} 
+              />
               <ImageLinkForm OnInputChange={this.OnInputChange} onButtonSubmit={this.onButtonSubmit}/>
               <FaceRecognition imageUrl={imageUrl} boxPosition={boxPosition} onImageLoad={this.onImageLoad}/>
           </div>
         : (
             this.state.route === 'SignIn' 
             ?
-            <SignIn onRouteChange={this.onRouteChange}/> 
+            <SignIn loadUser={this.loadUser} onRouteChange={this.onRouteChange}/> 
             :
-            <Register onRouteChange={this.onRouteChange}/>
+            <Register loadUser={this.loadUser} onRouteChange={this.onRouteChange}/>
           )
           
         }
